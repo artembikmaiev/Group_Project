@@ -13,6 +13,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.project.data.AppDatabase
 import com.example.project.navigation.NavGraph
 import com.example.project.navigation.Screen
+import com.example.project.ui.screens.AddActivityScreen
+import com.example.project.ui.screens.AddProductScreen
+import com.example.project.ui.screens.AddStepsScreen
 import com.example.project.ui.screens.HomeScreen
 import com.example.project.ui.screens.LoginScreen
 import com.example.project.ui.screens.RegisterScreen
@@ -43,7 +46,16 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(navController, database)
                         }
                         composable(Screen.Home.route) {
-                            HomeScreen()
+                            HomeScreen(navController)
+                        }
+                        composable(Screen.AddProduct.route) {
+                            AddProductScreen(navController)
+                        }
+                        composable(Screen.AddSteps.route) {
+                            AddStepsScreen(navController)
+                        }
+                        composable(Screen.AddActivity.route) {
+                            AddActivityScreen(navController)
                         }
                     }
                 }
