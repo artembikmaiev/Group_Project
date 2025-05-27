@@ -42,20 +42,17 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Home.route) {
                             HomeScreen(navController)
                         }
-                        composable(Screen.Progress.route) {
-                            ProgressScreen(navController)
+                        composable(Screen.Activity.route) {
+                            AddStepsScreen(navController)
                         }
                         composable(Screen.Food.route) {
-                            // TODO: Implement FoodScreen
-                            HomeScreen(navController)
+                            FoodScreen(navController)
                         }
                         composable(Screen.Statistics.route) {
-                            // TODO: Implement StatisticsScreen
-                            HomeScreen(navController)
+                            StatisticsScreen(navController)
                         }
                         composable(Screen.Profile.route) {
-                            // TODO: Implement ProfileScreen
-                            HomeScreen(navController)
+                            ProfileScreen(navController)
                         }
                     }
                 }

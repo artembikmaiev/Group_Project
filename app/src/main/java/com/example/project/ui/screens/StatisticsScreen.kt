@@ -4,32 +4,33 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.project.ui.components.BottomNavBar
 
 @Composable
-fun HomeScreen(
-    navController: NavController
-) {
+fun StatisticsScreen(navController: NavController) {
+    var date by remember { mutableStateOf("30.07.2024") }
     Scaffold(
         bottomBar = { BottomNavBar(navController) },
-        containerColor = Color(0xFF222222) // Background color
+        containerColor = Color(0xFF222222)
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.White) // Content area background
+                .background(Color.White)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -42,20 +43,19 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-            Divider(color = Color(0xFF4CAF50), thickness = 4.dp, modifier = Modifier.padding(vertical = 8.dp))
+            Divider(color = Color(0xFF4CAF50), thickness = 2.dp, modifier = Modifier.padding(vertical = 8.dp))
 
-            Text(
-                text = "Ваші сьогоднішні результати",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            Text("Ваші результати за:", fontSize = 18.sp)
+            Text(date, fontSize = 18.sp, color = Color(0xFF4CAF50))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.35f) // Adjust the height, e.g., 35% of available height
+                    .fillMaxHeight(0.30f)
                     .background(Color.White, RoundedCornerShape(16.dp))
-                    .padding(4.dp) // Reduced padding slightly for internal division
+                    .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(16.dp))
+                    .padding(4.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize()
@@ -63,15 +63,14 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f) // Make rows take equal height
+                            .weight(1f)
                     ) {
-                        // Норма пройденої відстані
                         Box(
                             modifier = Modifier
-                                .weight(1f) // Make columns take equal width
-                                .fillMaxHeight() // Fill height within the row
-                                .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp)) // Border for the inner square
-                                .padding(8.dp), // Padding inside the square
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp))
+                                .padding(8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -82,9 +81,8 @@ fun HomeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(4.dp)) // Space between squares
+                        Spacer(modifier = Modifier.width(4.dp))
 
-                        // Норма калорій
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -95,24 +93,23 @@ fun HomeScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Норма калорій:", fontSize = 12.sp)
-                                Text("2000 ккал", color = Color.Gray, fontSize = 12.sp) // Fixed kcal abbreviation
+                                Text("2000 ккал", color = Color.Gray, fontSize = 12.sp)
                                 Text("Спожито калорій:", fontSize = 12.sp)
-                                Text("1300 ккал", color = Color.Gray, fontSize = 12.sp) // Fixed kcal abbreviation
+                                Text("1300 ккал", color = Color.Gray, fontSize = 12.sp)
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp)) // Space between rows
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f) // Make rows take equal height
+                            .weight(1f)
                     ) {
-                        // Норма води за день
                         Box(
                             modifier = Modifier
-                                .weight(1f) // Make columns take equal width
+                                .weight(1f)
                                 .fillMaxHeight()
                                 .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp))
                                 .padding(8.dp),
@@ -126,9 +123,8 @@ fun HomeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(4.dp)) // Space between squares
+                        Spacer(modifier = Modifier.width(4.dp))
 
-                        // Вага сьогодні
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -139,23 +135,41 @@ fun HomeScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Вага сьогодні:", fontSize = 12.sp)
-                                Text("70 кг", color = Color.Gray, fontSize = 12.sp) // Fixed kg abbreviation
+                                Text("70 кг", color = Color.Gray, fontSize = 12.sp)
                                 Text("Ваша ціль:", fontSize = 12.sp)
-                                Text("68 кг", color = Color.Gray, fontSize = 12.sp) // Fixed kg abbreviation
+                                Text("68 кг", color = Color.Gray, fontSize = 12.sp)
                             }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Якщо ви хочете змінити ваші цілі на день до змініть їх на у відповідних секціях додатку",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                fontSize = 14.sp
+            Text("Оберіть іншу дату для перегляду попередніх результатів", fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            BasicTextField(
+                value = date,
+                onValueChange = { date = it },
+                singleLine = true,
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                    .padding(12.dp),
+                decorationBox = { innerTextField ->
+                    if (date.isEmpty()) Text("Оберіть дату", color = Color.Gray)
+                    innerTextField()
+                }
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { /* TODO: Зберегти */ },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Зберегти", color = Color.White)
+            }
         }
     }
 } 

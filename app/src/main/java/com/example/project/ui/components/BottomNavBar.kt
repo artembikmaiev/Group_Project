@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -42,10 +43,10 @@ fun BottomNavBar(
         NavigationBarItem(
             icon = { Icon(Icons.Default.List, contentDescription = "Прогрес") },
             label = { Text("Прогрес") },
-            selected = currentRoute == Screen.Progress.route,
+            selected = currentRoute == Screen.Activity.route,
             onClick = {
-                if (currentRoute != Screen.Progress.route) {
-                    navController.navigate(Screen.Progress.route) {
+                if (currentRoute != Screen.Activity.route) {
+                    navController.navigate(Screen.Activity.route) {
                         popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
@@ -54,7 +55,7 @@ fun BottomNavBar(
             }
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Info, contentDescription = "Їжа") },
+            icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Їжа") },
             label = { Text("Їжа") },
             selected = currentRoute == Screen.Food.route,
             onClick = {
