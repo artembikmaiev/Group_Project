@@ -13,11 +13,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.project.ui.components.BottomNavBar
+import com.example.project.ui.screens.SharedViewModel
 
 @Composable
 fun HomeScreen(
-    navController: NavController
+    navController: NavController,
+    sharedViewModel: SharedViewModel
 ) {
+    // Отримую дані з ViewModel
+    val currentWeight = sharedViewModel.currentWeight
+    val weightTarget = sharedViewModel.weightTarget
+    val currentDistance = sharedViewModel.currentDistance
+    val distanceTarget = sharedViewModel.distanceTarget
+    val totalCalories = sharedViewModel.getTotalCalories() // Отримую загальні калорії
+
     Scaffold(
         bottomBar = { BottomNavBar(navController) },
         containerColor = Color(0xFF222222) // Background color
@@ -53,7 +62,7 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.35f) // Adjust the height, e.g., 35% of available height
+                    .fillMaxHeight(0.45f) // Adjust the height, e.g., 35% of available height
                     .background(Color.White, RoundedCornerShape(16.dp))
                     .padding(4.dp) // Reduced padding slightly for internal division
             ) {
@@ -76,9 +85,9 @@ fun HomeScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Норма пройденої відстані:", fontSize = 12.sp)
-                                Text("5км", color = Color.Gray, fontSize = 12.sp)
+                                Text("${distanceTarget}км", color = Color.Gray, fontSize = 12.sp)
                                 Text("Пройдена відстань:", fontSize = 12.sp)
-                                Text("____", color = Color.Gray, fontSize = 12.sp)
+                                Text("${currentDistance}км", color = Color.Gray, fontSize = 12.sp)
                             }
                         }
 
@@ -95,9 +104,9 @@ fun HomeScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Норма калорій:", fontSize = 12.sp)
-                                Text("2000 ккал", color = Color.Gray, fontSize = 12.sp) // Fixed kcal abbreviation
+                                Text("2000 ккал", color = Color.Gray, fontSize = 12.sp) // Норма калорій залишається хардкодною
                                 Text("Спожито калорій:", fontSize = 12.sp)
-                                Text("1300 ккал", color = Color.Gray, fontSize = 12.sp) // Fixed kcal abbreviation
+                                Text("${totalCalories} ккал", color = Color.Gray, fontSize = 12.sp) // Виводжу спожиті калорії з ViewModel
                             }
                         }
                     }
@@ -139,9 +148,9 @@ fun HomeScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Вага сьогодні:", fontSize = 12.sp)
-                                Text("70 кг", color = Color.Gray, fontSize = 12.sp) // Fixed kg abbreviation
+                                Text("${currentWeight} кг", color = Color.Gray, fontSize = 12.sp)
                                 Text("Ваша ціль:", fontSize = 12.sp)
-                                Text("68 кг", color = Color.Gray, fontSize = 12.sp) // Fixed kg abbreviation
+                                Text("${weightTarget} кг", color = Color.Gray, fontSize = 12.sp)
                             }
                         }
                     }

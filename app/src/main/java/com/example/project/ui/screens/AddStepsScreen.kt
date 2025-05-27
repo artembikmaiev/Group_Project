@@ -17,21 +17,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.project.ui.components.BottomNavBar
+import com.example.project.ui.screens.SharedViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun AddStepsScreen(
-    navController: NavController
+    navController: NavController,
+    sharedViewModel: SharedViewModel
 ) {
-    var weightProgressToday by remember { mutableStateOf("") }
-    var newWeightTarget by remember { mutableStateOf("") }
-    var distanceProgressToday by remember { mutableStateOf("") }
-    var newDistanceTarget by remember { mutableStateOf("") }
+    var weightProgressTodayInput by remember { mutableStateOf(sharedViewModel.currentWeight) }
+    var newWeightTargetInput by remember { mutableStateOf(sharedViewModel.weightTarget) }
+    var distanceProgressTodayInput by remember { mutableStateOf(sharedViewModel.currentDistance) }
+    var newDistanceTargetInput by remember { mutableStateOf(sharedViewModel.distanceTarget) }
 
     val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         bottomBar = { BottomNavBar(navController) },
-        containerColor = Color(0xFF222222)
+        containerColor = Color(0xFF222222),
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -39,7 +45,7 @@ fun AddStepsScreen(
                 .padding(paddingValues)
                 .background(Color.White)
                 .padding(16.dp)
-                .verticalScroll(scrollState), // Make content scrollable
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -64,12 +70,14 @@ fun AddStepsScreen(
             ) {
                 Text("Вага", style = MaterialTheme.typography.titleMedium)
                 Text("Ваша ціль:", fontSize = 16.sp)
-                Text("68 кілограм", fontSize = 18.sp, color = Color.Gray)
+                Text("${sharedViewModel.weightTarget} кілограм", fontSize = 18.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Прогрес за сьогодні (вага):", fontSize = 16.sp)
                 BasicTextField(
-                    value = weightProgressToday,
-                    onValueChange = { weightProgressToday = it },
+                    value = weightProgressTodayInput,
+                    onValueChange = { 
+                        weightProgressTodayInput = it
+                    },
                     singleLine = true,
                     textStyle = TextStyle(fontSize = 16.sp),
                     modifier = Modifier
@@ -77,13 +85,21 @@ fun AddStepsScreen(
                         .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
                         .padding(12.dp),
                     decorationBox = { innerTextField ->
-                        if (weightProgressToday.isEmpty()) Text("Впишіть вашу вагу", color = Color.Gray)
+                        if (weightProgressTodayInput.isEmpty()) Text("Впишіть вашу вагу", color = Color.Gray)
                         innerTextField()
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { /* TODO: Зберегти вагу */ },
+                    onClick = { 
+                        sharedViewModel.setWeightProgress(weightProgressTodayInput)
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Вага збережена",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -94,8 +110,10 @@ fun AddStepsScreen(
 
                 Text("Якщо ви хочете змінити вашу ціль то напишіть нову:", fontSize = 14.sp, color = Color.Gray)
                 BasicTextField(
-                    value = newWeightTarget,
-                    onValueChange = { newWeightTarget = it },
+                    value = newWeightTargetInput,
+                    onValueChange = { 
+                        newWeightTargetInput = it
+                    },
                     singleLine = true,
                     textStyle = TextStyle(fontSize = 16.sp),
                     modifier = Modifier
@@ -103,13 +121,21 @@ fun AddStepsScreen(
                         .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
                         .padding(12.dp),
                     decorationBox = { innerTextField ->
-                        if (newWeightTarget.isEmpty()) Text("Впишіть вашу ціль", color = Color.Gray)
+                        if (newWeightTargetInput.isEmpty()) Text("Впишіть вашу ціль", color = Color.Gray)
                         innerTextField()
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { /* TODO: Зберегти нову ціль ваги */ },
+                    onClick = { 
+                        sharedViewModel.setWeightTarget(newWeightTargetInput)
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Ціль ваги збережена",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -126,13 +152,15 @@ fun AddStepsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text("Пройдена дистанція", style = MaterialTheme.typography.titleMedium)
-                 Text("Ваша ціль:", fontSize = 16.sp)
-                Text("5км", fontSize = 18.sp, color = Color.Gray)
-                 Spacer(modifier = Modifier.height(8.dp))
+                Text("Ваша ціль:", fontSize = 16.sp)
+                Text("${sharedViewModel.distanceTarget}км", fontSize = 18.sp, color = Color.Gray)
+                Spacer(modifier = Modifier.height(8.dp))
                 Text("Прогрес за сьогодні (дистанція):", fontSize = 16.sp)
                 BasicTextField(
-                    value = distanceProgressToday,
-                    onValueChange = { distanceProgressToday = it },
+                    value = distanceProgressTodayInput,
+                    onValueChange = { 
+                        distanceProgressTodayInput = it
+                    },
                     singleLine = true,
                     textStyle = TextStyle(fontSize = 16.sp),
                     modifier = Modifier
@@ -140,25 +168,31 @@ fun AddStepsScreen(
                         .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
                         .padding(12.dp),
                     decorationBox = { innerTextField ->
-                        if (distanceProgressToday.isEmpty()) Text("Впишіть вашу дистанцію", color = Color.Gray)
+                        if (distanceProgressTodayInput.isEmpty()) Text("Впишіть вашу дистанцію", color = Color.Gray)
                         innerTextField()
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { /* TODO: Зберегти дистанцію */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    onClick = {
+                        sharedViewModel.setDistanceProgress(distanceProgressTodayInput)
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Кроки збережено!")
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Зберегти дистанцію", color = Color.White)
+                    Text("Зберегти кроки")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text("Якщо ви хочете змінити вашу ціль то напишіть нову:", fontSize = 14.sp, color = Color.Gray)
                 BasicTextField(
-                    value = newDistanceTarget,
-                    onValueChange = { newDistanceTarget = it },
+                    value = newDistanceTargetInput,
+                    onValueChange = { 
+                        newDistanceTargetInput = it
+                    },
                     singleLine = true,
                     textStyle = TextStyle(fontSize = 16.sp),
                     modifier = Modifier
@@ -166,13 +200,21 @@ fun AddStepsScreen(
                         .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
                         .padding(12.dp),
                     decorationBox = { innerTextField ->
-                        if (newDistanceTarget.isEmpty()) Text("Впишіть вашу ціль", color = Color.Gray)
+                        if (newDistanceTargetInput.isEmpty()) Text("Впишіть вашу ціль", color = Color.Gray)
                         innerTextField()
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { /* TODO: Зберегти нову ціль дистанції */ },
+                    onClick = { 
+                        sharedViewModel.setDistanceTarget(newDistanceTargetInput)
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Ціль дистанції збережена",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
