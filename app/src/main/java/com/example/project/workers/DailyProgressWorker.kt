@@ -23,6 +23,15 @@ class DailyProgressWorker(
             val database = AppDatabase.getDatabase(context)
             val dailyProgressDao = database.dailyProgressDao()
 
+            // Get current user ID from SharedPreferences
+            val userPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+            val userId = userPrefs.getInt("current_user_id", -1) // -1 is a default value indicating no user
+
+            if (userId == -1) {
+                Log.e("DailyProgressWorker", "No user ID found in SharedPreferences. Skipping data save.")
+                return Result.failure() // Or Result.success() depending on desired behavior when no user is logged in
+            }
+
             // Отримуємо дані з SharedPreferences
             val weightProgress = prefs.getString("weight_progress", "70")?.toIntOrNull() ?: 70
             val weightTarget = prefs.getString("weight_target", "68")?.toIntOrNull() ?: 68
@@ -53,6 +62,7 @@ class DailyProgressWorker(
             Log.d("DailyProgressWorker", "Creating DailyProgress for date: $date")
 
             val dailyProgress = DailyProgress(
+                userId = userId,
                 date = date,
                 weightProgress = weightProgress,
                 weightTarget = weightTarget,
@@ -66,7 +76,7 @@ class DailyProgressWorker(
 
             // Зберігаємо дані в базу
             dailyProgressDao.insertDailyProgress(dailyProgress)
-            Log.d("DailyProgressWorker", "Data successfully saved to database")
+            Log.d("DailyProgressWorker", "Data successfully saved to database for user $userId")
 
             // Очищаємо прогрес за день
             prefs.edit().apply {
@@ -75,7 +85,7 @@ class DailyProgressWorker(
                 putString("calories_progress", "0")
                 apply()
             }
-            Log.d("DailyProgressWorker", "Progress cleared in SharedPreferences")
+            Log.d("DailyProgressWorker", "Progress cleared in SharedPreferences for user $userId")
 
             Result.success()
         } catch (e: Exception) {

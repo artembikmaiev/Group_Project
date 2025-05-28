@@ -17,16 +17,21 @@ import androidx.navigation.NavController
 import com.example.project.data.AppDatabase
 import com.example.project.navigation.Screen
 import kotlinx.coroutines.launch
+import com.example.project.ui.screens.SharedViewModel
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    database: AppDatabase
+    database: AppDatabase,
+    sharedViewModel: SharedViewModel
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val lightGreen = Color(0xFFE8F5E9)
     val primaryGreen = Color(0xFF4CAF50)
@@ -101,6 +106,11 @@ fun LoginScreen(
                     scope.launch {
                         val user = database.userDao().login(username, password)
                         if (user != null) {
+                            sharedViewModel.currentUser = user
+                            // Save user ID to SharedPreferences
+                            val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+                            prefs.edit().putInt("current_user_id", user.id).apply()
+
                             navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }

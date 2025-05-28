@@ -89,7 +89,7 @@ class MainActivity : ComponentActivity() {
                         startDestination = Screen.Login.route
                     ) {
                         composable(Screen.Login.route) {
-                            LoginScreen(navController, database)
+                            LoginScreen(navController, database, sharedViewModel)
                         }
                         composable(Screen.Register.route) {
                             RegisterScreen(navController, database)
@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
                             StatisticsScreen(navController, sharedViewModel)
                         }
                         composable(Screen.Profile.route) {
-                            ProfileScreen(navController)
+                            ProfileScreen(navController, sharedViewModel)
                         }
                     }
                 }

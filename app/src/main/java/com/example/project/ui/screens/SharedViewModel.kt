@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import com.example.project.data.User
 
 class SharedViewModel(
     private val database: AppDatabase,
@@ -53,6 +54,8 @@ class SharedViewModel(
     private var _caloriesTarget = mutableStateOf(prefs.getString("calories_target", "2000") ?: "2000")
     val caloriesTarget: String
         get() = _caloriesTarget.value
+
+    var currentUser by mutableStateOf<User?>(null)
 
     fun addFood(food: Food, grams: Int) {
         val calories = (food.calories * grams) / 100 // Розраховую калорійність для порції
@@ -107,23 +110,62 @@ class SharedViewModel(
 
     fun saveDailyProgress() {
         viewModelScope.launch {
-            val dailyProgress = DailyProgress(
-                date = Date(),
-                distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
-                distanceProgress = _currentDistance.value.toIntOrNull() ?: 0,
-                waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
-                waterProgress = _waterProgress.value.toIntOrNull() ?: 0,
-                weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
-                weightProgress = _currentWeight.value.toIntOrNull() ?: 0,
-                caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0,
-                caloriesProgress = getTotalCalories()
-            )
-            dailyProgressDao.insertDailyProgress(dailyProgress)
+            currentUser?.id?.let { userId ->
+                val dailyProgress = DailyProgress(
+                    userId = userId,
+                    date = Date(),
+                    distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                    distanceProgress = _currentDistance.value.toIntOrNull() ?: 0,
+                    waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                    waterProgress = _waterProgress.value.toIntOrNull() ?: 0,
+                    weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                    weightProgress = _currentWeight.value.toIntOrNull() ?: 0,
+                    caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0,
+                    caloriesProgress = getTotalCalories()
+                )
+                dailyProgressDao.insertDailyProgress(dailyProgress)
+            }
         }
     }
 
     fun getDailyProgress(date: Date): Flow<DailyProgress?> = flow {
-        val progress = dailyProgressDao.getDailyProgress(date)
-        emit(progress)
+        currentUser?.id?.let { userId ->
+            val progress = dailyProgressDao.getDailyProgress(userId, date)
+            emit(progress)
+        }
+    }
+
+    fun getAllDailyProgress(): Flow<List<DailyProgress>> = flow {
+        currentUser?.id?.let { userId ->
+            val progressList = dailyProgressDao.getAllDailyProgress(userId)
+            emit(progressList)
+        } ?: emit(emptyList())
+    }
+
+    suspend fun deleteAllDailyProgress() {
+        currentUser?.id?.let { userId ->
+            dailyProgressDao.deleteAllDailyProgress(userId)
+        }
+    }
+
+    suspend fun updateCurrentUser(username: String, email: String, dateOfBirth: Date?, gender: String?) {
+        currentUser?.let { user ->
+            val updatedUser = user.copy(username = username, email = email, dateOfBirth = dateOfBirth, gender = gender)
+            database.userDao().updateUser(updatedUser)
+            currentUser = updatedUser // Update the state after successful database update
+        }
+    }
+
+    fun calculateActivityLevel(distanceKm: Int): String {
+        return when {
+            distanceKm < 2 -> "Низька"
+            distanceKm >= 2 && distanceKm <= 5 -> "Середня"
+            else -> "Висока"
+        }
+    }
+
+    fun resetWaterProgress() {
+        _waterProgress.value = "0"
+        prefs.edit().putString("water_progress", "0").apply()
     }
 } 

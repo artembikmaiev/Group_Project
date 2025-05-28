@@ -110,7 +110,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         suspend fun populateTestProgressData(dailyProgressDao: DailyProgressDao) {
             // Очищаємо таблицю перед додаванням тестових даних
-            dailyProgressDao.deleteAllDailyProgress()
+            dailyProgressDao.deleteAllDailyProgress(1)
 
             val calendar = Calendar.getInstance()
             calendar.set(2025, Calendar.MAY, 1) // Встановлюємо 1 травня 2025
@@ -134,6 +134,7 @@ abstract class AppDatabase : RoomDatabase() {
                 val caloriesTarget = 2000
 
                 val dailyProgress = DailyProgress(
+                    userId = 1,
                     date = date,
                     weightProgress = weightProgress,
                     weightTarget = weightTarget,
