@@ -16,63 +16,74 @@ import com.example.project.ui.components.BottomNavBar
 import com.example.project.ui.components.AppHeader
 import com.example.project.ui.screens.SharedViewModel
 
+/**
+ * Головний екран додатку
+ * Відображає основні показники користувача за день:
+ * - Пройдену відстань та ціль
+ * - Спожиті калорії та денну норму
+ * - Кількість випитої води та ціль
+ * - Поточну вагу та цільову вагу
+ */
 @Composable
 fun HomeScreen(
     navController: NavController,
     sharedViewModel: SharedViewModel
 ) {
-    // Отримую дані з ViewModel
+    // Отримуємо дані з ViewModel для відображення прогресу
     val currentWeight = sharedViewModel.currentWeight
     val weightTarget = sharedViewModel.weightTarget
     val currentDistance = sharedViewModel.currentDistance
     val distanceTarget = sharedViewModel.distanceTarget
-    val totalCalories = sharedViewModel.getTotalCalories() // Отримую загальні калорії
+    val totalCalories = sharedViewModel.getTotalCalories() // Загальні спожиті калорії
     val waterProgress = sharedViewModel.currentWaterProgress
     val waterTarget = sharedViewModel.waterTarget
 
     Scaffold(
         bottomBar = { BottomNavBar(navController) },
-        containerColor = Color(0xFF222222) // Background color
+        containerColor = Color(0xFF222222) // Колір фону
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.White) // Content area background
+                .background(Color.White) // Колір фону контенту
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             AppHeader()
 
+            // Заголовок екрану
             Text(
                 text = "Ваші сьогоднішні результати",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
+            // Контейнер з чотирма блоками показників
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.45f) // Adjust the height, e.g., 35% of available height
+                    .fillMaxHeight(0.45f) // Висота 45% від доступного простору
                     .background(Color.White, RoundedCornerShape(16.dp))
-                    .padding(4.dp) // Reduced padding slightly for internal division
+                    .padding(4.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    // Верхній ряд з двома блоками
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f) // Make rows take equal height
+                            .weight(1f)
                     ) {
-                        // Норма пройденої відстані
+                        // Блок з показниками відстані
                         Box(
                             modifier = Modifier
-                                .weight(1f) // Make columns take equal width
-                                .fillMaxHeight() // Fill height within the row
-                                .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp)) // Border for the inner square
-                                .padding(8.dp), // Padding inside the square
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp))
+                                .padding(8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -83,9 +94,9 @@ fun HomeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(4.dp)) // Space between squares
+                        Spacer(modifier = Modifier.width(4.dp))
 
-                        // Норма калорій
+                        // Блок з показниками калорій
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -96,30 +107,31 @@ fun HomeScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Норма калорій:", fontSize = 12.sp)
-                                Text("2000 ккал", color = Color.Gray, fontSize = 12.sp) // Норма калорій залишається хардкодною
+                                Text("2000 ккал", color = Color.Gray, fontSize = 12.sp)
                                 Text("Спожито калорій:", fontSize = 12.sp)
-                                Text("${totalCalories} ккал", color = Color.Gray, fontSize = 12.sp) // Виводжу спожиті калорії з ViewModel
+                                Text("${totalCalories} ккал", color = Color.Gray, fontSize = 12.sp)
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp)) // Space between rows
+                    Spacer(modifier = Modifier.height(4.dp))
 
+                    // Нижній ряд з двома блоками
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f) // Make rows take equal height
+                            .weight(1f)
                     ) {
-                        // Норма води за день
+                        // Блок з показниками води
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp))
                                 .padding(8.dp),
-                             contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center
                         ) {
-                           Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Норма води за день:", fontSize = 12.sp)
                                 Text("${waterTarget} л", color = Color.Gray, fontSize = 12.sp)
                                 Text("Випито:", fontSize = 12.sp)
@@ -127,16 +139,16 @@ fun HomeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(4.dp)) // Space between squares
+                        Spacer(modifier = Modifier.width(4.dp))
 
-                        // Вага сьогодні
+                        // Блок з показниками ваги
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp))
                                 .padding(8.dp),
-                             contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Вага сьогодні:", fontSize = 12.sp)
@@ -151,8 +163,9 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Інформаційний текст про зміну цілей
             Text(
-                text = "Якщо ви хочете змінити ваші цілі на день до змініть їх на у відповідних секціях додатку",
+                text = "Якщо ви хочете змінити ваші цілі на день, змініть їх у відповідних секціях додатку",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray,
                 fontSize = 14.sp

@@ -43,18 +43,21 @@ fun FoodScreen(
     database: AppDatabase,
     sharedViewModel: SharedViewModel
 ) {
+    // Стан для пошуку продуктів
     var search by remember { mutableStateOf("") }
     val foodDao = remember { database.foodDao() }
     val products by foodDao.getAllFood().collectAsState(initial = emptyList())
 
+    // Список вибраних продуктів для споживання
     val selectedFoods = sharedViewModel.selectedFoods
     var selectedFood by remember { mutableStateOf<Food?>(null) }
 
-    // Змінні стану для діалогового вікна
+    // Стан для діалогового вікна додавання продукту
     var showDialog by remember { mutableStateOf(false) }
     var gramsInput by remember { mutableStateOf("") }
     var foodToAdd by remember { mutableStateOf<Food?>(null) }
 
+    // Фільтруємо продукти за пошуковим запитом
     val filteredProducts = products.filter { it.name.contains(search, ignoreCase = true) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -62,7 +65,7 @@ fun FoodScreen(
     Scaffold(
         bottomBar = { BottomNavBar(navController) },
         containerColor = Color(0xFF222222),
-        snackbarHost = { SnackbarHost(snackbarHostState) } // Якщо залишали SnackbarHost
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -74,6 +77,7 @@ fun FoodScreen(
         ) {
             AppHeader()
 
+            // Поле пошуку продуктів
             BasicTextField(
                 value = search,
                 onValueChange = { search = it },
@@ -90,17 +94,17 @@ fun FoodScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Контейнер для обох списків та кнопки
+            // Контейнер для списків доступних та спожитих продуктів
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f) // Займає весь доступний простір по висоті
+                    .weight(1f)
             ) {
-                // Верхній список (тепер у контейнері)
+                // Список доступних продуктів з можливістю додавання
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f) // Займає половину доступного простору в цьому контейнері
+                        .weight(1f)
                         .background(Color.White, RoundedCornerShape(16.dp))
                         .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(16.dp))
                         .padding(8.dp)
@@ -112,7 +116,6 @@ fun FoodScreen(
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp)
                                 .clickable { 
-                                    // При кліку на продукт, зберігаємо його і показуємо діалог
                                     foodToAdd = food
                                     showDialog = true
                                 }
@@ -128,10 +131,10 @@ fun FoodScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Список спожитих продуктів з можливістю видалення
                 Text("Спожиті продукти", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.align(Alignment.Start))
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Нижній список (тепер відображає ConsumedFood без групування)
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -140,19 +143,18 @@ fun FoodScreen(
                         .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(16.dp))
                         .padding(8.dp)
                 ) {
-                    if (selectedFoods.isEmpty()) { // Перевіряємо список ConsumedFood
+                    if (selectedFoods.isEmpty()) {
                          item { 
                              Text("Тут з'являться спожиті продукти", color = Color.Gray)
                          }
                     } else {
-                        items(selectedFoods) { consumedFood -> // Використовуємо ConsumedFood
+                        items(selectedFoods) { consumedFood ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                // Показуємо назву продукту та грами/калорії
                                 Text("${consumedFood.food.name} (${consumedFood.grams}г)", fontSize = 16.sp, modifier = Modifier.weight(1f))
                                 Text("Калорійність: ${consumedFood.calories} ккал", fontSize = 14.sp, color = Color.Gray)
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -163,7 +165,7 @@ fun FoodScreen(
                                     modifier = Modifier
                                         .size(20.dp) 
                                         .clickable {
-                                            sharedViewModel.removeFood(consumedFood) // Видаляємо ConsumedFood
+                                            sharedViewModel.removeFood(consumedFood)
                                         }
                                 )
                             }
@@ -175,7 +177,7 @@ fun FoodScreen(
         }
     }
 
-    // Діалогове вікно для введення грамів
+    // Діалогове вікно для введення кількості грамів продукту
     if (showDialog && foodToAdd != null) {
         AlertDialog(
             onDismissRequest = { 
@@ -189,7 +191,7 @@ fun FoodScreen(
                     value = gramsInput,
                     onValueChange = { gramsInput = it },
                     label = { Text("Грами") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number) // Тільки цифри
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             },
             confirmButton = {
@@ -200,8 +202,6 @@ fun FoodScreen(
                         gramsInput = ""
                         foodToAdd = null
                         showDialog = false
-                    } else {
-                        // Можна показати помилку, якщо ввід некоректний
                     }
                 }) { Text("Додати") }
             },

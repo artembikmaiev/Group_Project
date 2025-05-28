@@ -21,18 +21,22 @@ import com.example.project.workers.DailyProgressWorker
 import java.util.concurrent.TimeUnit
 import java.util.Calendar
 
+/**
+ * Головна активність додатку
+ * Відповідає за ініціалізацію навігації, бази даних та WorkManager
+ */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         Log.d("MainActivity", "Starting WorkManager configuration")
         
-        // Налаштовуємо WorkManager для збереження даних о 23:59
+        // Налаштовуємо WorkManager для автоматичного збереження даних о 23:59
         val constraints = Constraints.Builder()
-            .setRequiresBatteryNotLow(true)
+            .setRequiresBatteryNotLow(true) // Запуск тільки при достатньому заряді батареї
             .build()
 
-        // Встановлюємо час на 23:59
+        // Встановлюємо час на 23:59 для щоденного збереження
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.HOUR_OF_DAY, 23)
         calendar.set(Calendar.MINUTE, 59)
@@ -68,6 +72,7 @@ class MainActivity : ComponentActivity() {
 
         Log.d("MainActivity", "Work enqueued successfully")
 
+        // Ініціалізація бази даних
         val database = AppDatabase.getDatabase(this)
         
         setContent {
@@ -76,6 +81,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    // Налаштування навігації та ViewModel
                     val navController = rememberNavController()
                     val sharedViewModel: SharedViewModel = viewModel(
                         factory = SharedViewModelFactory(
@@ -84,6 +90,7 @@ class MainActivity : ComponentActivity() {
                         )
                     )
                     
+                    // Визначення маршрутів навігації
                     NavHost(
                         navController = navController,
                         startDestination = Screen.Login.route

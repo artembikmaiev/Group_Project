@@ -9,6 +9,11 @@ import kotlinx.coroutines.launch
 import java.util.*
 import java.util.Calendar
 
+/**
+ * Головна база даних додатку
+ * Містить таблиці для користувачів, продуктів та щоденного прогресу
+ * Використовує Room для зберігання даних
+ */
 @Database(
     entities = [User::class, Food::class, DailyProgress::class],
     version = 4,
@@ -24,6 +29,10 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        /**
+         * Отримання єдиного екземпляру бази даних
+         * Використовує паттерн Singleton для забезпечення єдиного екземпляру
+         */
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -40,6 +49,10 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 
+    /**
+     * Callback для ініціалізації бази даних
+     * Заповнює базу початковими даними при першому запуску
+     */
     private class AppDatabaseCallback(
         private val scope: CoroutineScope
     ) : RoomDatabase.Callback() {
@@ -53,6 +66,10 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Заповнення бази даних початковим списком продуктів
+         * Додає базовий набір продуктів з їх калорійністю
+         */
         suspend fun populateDatabase(foodDao: FoodDao) {
             val foodList = listOf(
                 Food(name = "Куряча грудка", calories = 165),

@@ -1,16 +1,23 @@
 package com.example.project.navigation
 
+/**
+ * Визначення екранів додатку та їх маршрутів
+ * Використовується для навігації між екранами
+ */
 sealed class Screen(val route: String) {
-    object Login : Screen("login")
-    object Register : Screen("register")
-    object Home : Screen("home")
-    object Activity : Screen("progress")
-    object Food : Screen("food")
-    object Statistics : Screen("statistics")
-    object Profile : Screen("profile")
-    object Water : Screen("water")
+    object Login : Screen("login") // Екран входу
+    object Register : Screen("register") // Екран реєстрації
+    object Home : Screen("home") // Головний екран
+    object Activity : Screen("progress") // Екран прогресу
+    object Food : Screen("food") // Екран харчування
+    object Statistics : Screen("statistics") // Екран статистики
+    object Profile : Screen("profile") // Екран профілю
+    object Water : Screen("water") // Екран споживання води
 }
 
+/**
+ * Константи для навігації
+ */
 object NavGraph {
-    const val ROOT_ROUTE = "root"
+    const val ROOT_ROUTE = "root" // Кореневий маршрут додатку
 } 
