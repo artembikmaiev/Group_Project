@@ -35,6 +35,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.project.data.ConsumedFood
+import com.example.project.ui.components.AppHeader
 
 @Composable
 fun FoodScreen(
@@ -71,18 +72,8 @@ fun FoodScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "WellMinder",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Divider(color = Color(0xFF4CAF50), thickness = 2.dp, modifier = Modifier.padding(vertical = 8.dp))
+            AppHeader()
+
             BasicTextField(
                 value = search,
                 onValueChange = { search = it },

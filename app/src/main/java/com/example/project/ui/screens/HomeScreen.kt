@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.project.ui.components.BottomNavBar
+import com.example.project.ui.components.AppHeader
 import com.example.project.ui.screens.SharedViewModel
 
 @Composable
@@ -26,6 +27,8 @@ fun HomeScreen(
     val currentDistance = sharedViewModel.currentDistance
     val distanceTarget = sharedViewModel.distanceTarget
     val totalCalories = sharedViewModel.getTotalCalories() // Отримую загальні калорії
+    val waterProgress = sharedViewModel.currentWaterProgress
+    val waterTarget = sharedViewModel.waterTarget
 
     Scaffold(
         bottomBar = { BottomNavBar(navController) },
@@ -40,18 +43,7 @@ fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "WellMinder",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Divider(color = Color(0xFF4CAF50), thickness = 4.dp, modifier = Modifier.padding(vertical = 8.dp))
+            AppHeader()
 
             Text(
                 text = "Ваші сьогоднішні результати",
@@ -121,7 +113,7 @@ fun HomeScreen(
                         // Норма води за день
                         Box(
                             modifier = Modifier
-                                .weight(1f) // Make columns take equal width
+                                .weight(1f)
                                 .fillMaxHeight()
                                 .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp))
                                 .padding(8.dp),
@@ -129,9 +121,9 @@ fun HomeScreen(
                         ) {
                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Норма води за день:", fontSize = 12.sp)
-                                Text("2 літри", color = Color.Gray, fontSize = 12.sp)
+                                Text("${waterTarget} л", color = Color.Gray, fontSize = 12.sp)
                                 Text("Випито:", fontSize = 12.sp)
-                                Text("1.3 літри", color = Color.Gray, fontSize = 12.sp)
+                                Text("${waterProgress} мл", color = Color.Gray, fontSize = 12.sp)
                             }
                         }
 

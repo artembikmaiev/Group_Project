@@ -16,6 +16,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.project.ui.components.AppHeader
 import com.example.project.ui.components.BottomNavBar
 import com.example.project.ui.screens.SharedViewModel
 import kotlinx.coroutines.launch
@@ -49,6 +50,8 @@ fun AddStepsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            AppHeader()
+
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -180,9 +183,10 @@ fun AddStepsScreen(
                             snackbarHostState.showSnackbar("Кроки збережено!")
                         }
                     },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Зберегти кроки")
+                    Text("Зберегти кроки", color = Color.White)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

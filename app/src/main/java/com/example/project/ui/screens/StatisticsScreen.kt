@@ -15,6 +15,7 @@ import com.example.project.ui.components.BottomNavBar
 import com.example.project.data.DailyProgress
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.project.ui.components.AppHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,18 +58,7 @@ fun StatisticsScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "WellMinder",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Divider(color = Color(0xFF4CAF50), thickness = 2.dp, modifier = Modifier.padding(vertical = 8.dp))
+            AppHeader()
 
             // Кнопка вибору дати
             Button(
@@ -99,8 +89,8 @@ fun StatisticsScreen(
                 )
                 StatisticsCard(
                     title = "Вода",
-                    current = "${sharedViewModel.waterProgress} л",
-                    target = "${sharedViewModel.waterTarget} л"
+                    current = "${sharedViewModel.currentWaterProgress} мл",
+                    target = "${(sharedViewModel.waterTarget.toFloatOrNull() ?: 0f) * 1000} мл"
                 )
                 StatisticsCard(
                     title = "Калорії",
@@ -122,8 +112,8 @@ fun StatisticsScreen(
                     )
                     StatisticsCard(
                         title = "Вода",
-                        current = "${progress.waterProgress} л",
-                        target = "${progress.waterTarget} л"
+                        current = "${progress.waterProgress} мл",
+                        target = "${progress.waterTarget * 1000} мл"
                     )
                     StatisticsCard(
                         title = "Калорії",

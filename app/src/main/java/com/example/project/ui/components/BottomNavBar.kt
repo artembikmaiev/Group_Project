@@ -6,6 +6,8 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -64,21 +66,21 @@ fun BottomNavBar(
         NavigationBarItem(
             icon = { 
                 Icon(
-                    Icons.Default.List,
-                    contentDescription = "Прогрес",
-                    tint = if (currentRoute == Screen.Activity.route) primaryGreen else inactiveGray
+                    Icons.Default.ShoppingCart,
+                    contentDescription = "Їжа",
+                    tint = if (currentRoute == Screen.Food.route) primaryGreen else inactiveGray
                 )
             },
             label = { 
                 Text(
-                    "Прогрес",
-                    color = if (currentRoute == Screen.Activity.route) primaryGreen else inactiveGray
+                    "Їжа",
+                    color = if (currentRoute == Screen.Food.route) primaryGreen else inactiveGray
                 )
             },
-            selected = currentRoute == Screen.Activity.route,
+            selected = currentRoute == Screen.Food.route,
             onClick = {
-                if (currentRoute != Screen.Activity.route) {
-                    navController.navigate(Screen.Activity.route) {
+                if (currentRoute != Screen.Food.route) {
+                    navController.navigate(Screen.Food.route) {
                         popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
@@ -96,21 +98,53 @@ fun BottomNavBar(
         NavigationBarItem(
             icon = { 
                 Icon(
-                    Icons.Default.ShoppingCart,
-                    contentDescription = "Їжа",
-                    tint = if (currentRoute == Screen.Food.route) primaryGreen else inactiveGray
+                    Icons.Default.WaterDrop,
+                    contentDescription = "Вода",
+                    tint = if (currentRoute == Screen.Water.route) primaryGreen else inactiveGray
                 )
             },
             label = { 
                 Text(
-                    "Їжа",
-                    color = if (currentRoute == Screen.Food.route) primaryGreen else inactiveGray
+                    "Вода",
+                    color = if (currentRoute == Screen.Water.route) primaryGreen else inactiveGray
                 )
             },
-            selected = currentRoute == Screen.Food.route,
+            selected = currentRoute == Screen.Water.route,
             onClick = {
-                if (currentRoute != Screen.Food.route) {
-                    navController.navigate(Screen.Food.route) {
+                if (currentRoute != Screen.Water.route) {
+                    navController.navigate(Screen.Water.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = primaryGreen,
+                unselectedIconColor = inactiveGray,
+                selectedTextColor = primaryGreen,
+                unselectedTextColor = inactiveGray,
+                indicatorColor = Color.White
+            )
+        )
+        NavigationBarItem(
+            icon = { 
+                Icon(
+                    Icons.Default.TrendingUp,
+                    contentDescription = "Прогрес",
+                    tint = if (currentRoute == Screen.Activity.route) primaryGreen else inactiveGray
+                )
+            },
+            label = { 
+                Text(
+                    "Прогрес",
+                    color = if (currentRoute == Screen.Activity.route) primaryGreen else inactiveGray
+                )
+            },
+            selected = currentRoute == Screen.Activity.route,
+            onClick = {
+                if (currentRoute != Screen.Activity.route) {
+                    navController.navigate(Screen.Activity.route) {
                         popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
@@ -161,13 +195,13 @@ fun BottomNavBar(
             icon = { 
                 Icon(
                     Icons.Default.Person,
-                    contentDescription = "Користувач",
+                    contentDescription = "Профіль",
                     tint = if (currentRoute == Screen.Profile.route) primaryGreen else inactiveGray
                 )
             },
             label = { 
                 Text(
-                    "Користувач",
+                    "Профіль",
                     color = if (currentRoute == Screen.Profile.route) primaryGreen else inactiveGray
                 )
             },

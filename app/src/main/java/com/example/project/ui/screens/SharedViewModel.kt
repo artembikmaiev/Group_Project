@@ -19,6 +19,7 @@ import com.example.project.data.User
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.runtime.snapshotFlow
+import java.util.Calendar
 
 class SharedViewModel(
     private val database: AppDatabase,
@@ -59,6 +60,14 @@ class SharedViewModel(
     val caloriesTarget: String
         get() = _caloriesTarget.value
 
+    private var _waterAmount = mutableStateOf(prefs.getString("water_amount", "0") ?: "0")
+    val waterAmount: String
+        get() = _waterAmount.value
+
+    private var _currentWaterProgress = mutableStateOf("0")
+    val currentWaterProgress: String
+        get() = _currentWaterProgress.value
+
     var currentUser by mutableStateOf<User?>(null)
 
     init {
@@ -68,6 +77,7 @@ class SharedViewModel(
                 .collectLatest { user ->
                     user?.let {
                         loadProgressForUser(it.id)
+                        loadCurrentWaterProgress()
                     } ?: run {
                         _currentWeight.value = "70"
                         _weightTarget.value = "68"
@@ -76,6 +86,7 @@ class SharedViewModel(
                         _waterProgress.value = "0"
                         _waterTarget.value = "2"
                         _caloriesTarget.value = "2000"
+                        _currentWaterProgress.value = "0"
                         selectedFoods = emptyList()
                     }
                 }
@@ -92,6 +103,20 @@ class SharedViewModel(
         _waterTarget.value = userProgressPrefs.getString("water_target", "2") ?: "2"
         _caloriesTarget.value = userProgressPrefs.getString("calories_target", "2000") ?: "2000"
         selectedFoods = emptyList()
+    }
+
+    private fun loadCurrentWaterProgress() {
+        viewModelScope.launch {
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.time
+
+            val dailyProgress = dailyProgressDao.getDailyProgressByDate(today)
+            _currentWaterProgress.value = dailyProgress?.waterProgress?.toString() ?: "0"
+        }
     }
 
     private fun saveProgressForCurrentUser() {
@@ -164,6 +189,45 @@ class SharedViewModel(
         _caloriesTarget.value = target
         prefs.edit().putString("calories_target", target).apply()
         saveProgressForCurrentUser()
+    }
+
+    fun setWaterAmount(amount: String) {
+        _waterAmount.value = amount
+        prefs.edit().putString("water_amount", amount).apply()
+        
+        // Зберігаємо в базу даних
+        viewModelScope.launch {
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.time
+
+            val dailyProgress = dailyProgressDao.getDailyProgressByDate(today)
+            if (dailyProgress != null) {
+                val updatedProgress = dailyProgress.copy(
+                    waterProgress = amount.toIntOrNull() ?: 0
+                )
+                dailyProgressDao.updateDailyProgress(updatedProgress)
+                _currentWaterProgress.value = amount
+            } else {
+                val newProgress = DailyProgress(
+                    date = today,
+                    waterProgress = amount.toIntOrNull() ?: 0,
+                    userId = currentUser?.id ?: 0,
+                    waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                    distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                    distanceProgress = _currentDistance.value.toIntOrNull() ?: 0,
+                    weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                    weightProgress = _currentWeight.value.toIntOrNull() ?: 0,
+                    caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0,
+                    caloriesProgress = getTotalCalories()
+                )
+                dailyProgressDao.insertDailyProgress(newProgress)
+                _currentWaterProgress.value = amount
+            }
+        }
     }
 
     fun getTotalCalories(): Int {

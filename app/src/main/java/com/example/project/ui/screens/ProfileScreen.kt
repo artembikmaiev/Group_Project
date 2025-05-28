@@ -45,6 +45,7 @@ import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
+import com.example.project.ui.components.AppHeader
 
 @Composable
 fun ProfileScreen(
@@ -91,19 +92,9 @@ fun ProfileScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            AppHeader()
+            
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "WellMinder",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            HorizontalDivider(color = Color(0xFF4CAF50), thickness = 2.dp, modifier = Modifier.padding(vertical = 8.dp))
-            Spacer(modifier = Modifier.height(16.dp))
             Box(
                 modifier = Modifier
                     .size(100.dp)

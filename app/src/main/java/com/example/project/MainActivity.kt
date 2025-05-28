@@ -109,6 +109,9 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Profile.route) {
                             ProfileScreen(navController, sharedViewModel)
                         }
+                        composable(Screen.Water.route) {
+                            WaterScreen(navController, sharedViewModel)
+                        }
                     }
                 }
             }
