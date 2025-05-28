@@ -89,12 +89,12 @@ fun StatisticsScreen(
                 )
                 StatisticsCard(
                     title = "Вода",
-                    current = "${sharedViewModel.currentWaterProgress} мл",
+                    current = "${sharedViewModel.waterProgress} мл",
                     target = "${(sharedViewModel.waterTarget.toFloatOrNull() ?: 0f) * 1000} мл"
                 )
                 StatisticsCard(
                     title = "Калорії",
-                    current = "${sharedViewModel.getTotalCalories()} ккал",
+                    current = "${sharedViewModel.currentCaloriesProgress} ккал",
                     target = "${sharedViewModel.caloriesTarget} ккал"
                 )
             } else {

@@ -20,36 +20,34 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.runtime.snapshotFlow
 import java.util.Calendar
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class SharedViewModel(
     private val database: AppDatabase,
     private val context: Context
 ) : ViewModel() {
     private val dailyProgressDao = database.dailyProgressDao()
+    private val userDao = database.userDao()
+
+    // StateFlow для щоденного прогресу
+    private val _dailyProgress = MutableStateFlow<DailyProgress?>(null)
+    val dailyProgress: StateFlow<DailyProgress?> = _dailyProgress
 
     var selectedFoods by mutableStateOf(listOf<ConsumedFood>())
         private set
 
-    // Змінні стану для відстеження прогресу користувача
-    private var _currentWeight = mutableStateOf("0")
-    val currentWeight: String
-        get() = _currentWeight.value
-
+    // Виносимо змінні стану для цілей та поточних значень
     private var _weightTarget = mutableStateOf("0")
     val weightTarget: String
         get() = _weightTarget.value
 
-    private var _currentDistance = mutableStateOf("0")
-    val currentDistance: String
-        get() = _currentDistance.value
-
     private var _distanceTarget = mutableStateOf("5")
     val distanceTarget: String
         get() = _distanceTarget.value
-
-    private var _waterProgress = mutableStateOf("0")
-    val waterProgress: String
-        get() = _waterProgress.value
 
     private var _waterTarget = mutableStateOf("2")
     val waterTarget: String
@@ -59,258 +57,343 @@ class SharedViewModel(
     val caloriesTarget: String
         get() = _caloriesTarget.value
 
+    // Отримуємо поточні значення з dailyProgress StateFlow для UI
+    val currentWeight: String
+        get() = _dailyProgress.value?.weightProgress?.toString() ?: "0"
+
+    val currentDistance: String
+        get() = _dailyProgress.value?.distanceProgress?.toString() ?: "0"
+
+    val waterProgress: String
+        get() = _dailyProgress.value?.waterProgress?.toString() ?: "0"
+
+    val currentCaloriesProgress: String
+        get() = _dailyProgress.value?.caloriesProgress?.toString() ?: "0"
+
+    // Змінна стану для води, що вводиться в UI (не зберігається в DailyProgress напряму)
     private var _waterAmount = mutableStateOf("0")
     val waterAmount: String
         get() = _waterAmount.value
 
-    private var _currentWaterProgress = mutableStateOf("0")
-    val currentWaterProgress: String
-        get() = _currentWaterProgress.value
-
     var currentUser by mutableStateOf<User?>(null)
 
-    // Нова змінна стану для поточного прогресу калорій
-    private var _currentCaloriesProgress = mutableStateOf("0")
-    val currentCaloriesProgress: String
-        get() = _currentCaloriesProgress.value
-
     init {
+        // Завантаження ID останнього користувача при старті
+        loadLastUser()
+
+        // Спостерігаємо за поточним користувачем та завантажуємо його дані
         viewModelScope.launch {
             snapshotFlow { currentUser }
                 .distinctUntilChanged()
                 .collectLatest { user ->
                     if (user != null) {
-                        // Завантажуємо дані нового користувача
-                        loadProgressForUser(user.id)
+                        // Завантажуємо щоденний прогрес для поточного користувача
+                        loadDailyProgress(user.id)
+                        // Оновлюємо цілі при зміні користувача
+                        loadUserTargets(user.id)
                     } else {
-                        // Якщо користувач вийшов, очищаємо всі дані в ViewModel
-                        resetAllProgress()
+                        // Якщо користувач вийшов, очищаємо ViewModel state
+                        resetViewModelState()
                     }
+                }
+        }
+
+        // Спостерігаємо за змінами dailyProgress і оновлюємо waterAmount
+        viewModelScope.launch {
+            _dailyProgress.collectLatest { progress ->
+                _waterAmount.value = progress?.waterProgress?.toString() ?: "0"
+            }
+        }
+    }
+
+    // Завантажує ID останнього увійденного користувача з SharedPreferences
+    private fun loadLastUser() {
+        val userPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        val lastUserId = userPrefs.getInt("current_user_id", -1)
+        if (lastUserId != -1) {
+            viewModelScope.launch {
+                // Намагаємося завантажити користувача з бази даних
+                currentUser = userDao.getUserById(lastUserId) // Потрібен новий метод в UserDao
+            }
+        }
+    }
+
+    // Очищає ViewModel state до значень за замовчуванням (при виході користувача)
+    private fun resetViewModelState() {
+        _dailyProgress.value = null // Скидаємо daily progress StateFlow
+        _weightTarget.value = "0"
+        _distanceTarget.value = "5"
+        _waterTarget.value = "2"
+        _caloriesTarget.value = "2000"
+        _waterAmount.value = "0"
+        selectedFoods = emptyList()
+    }
+
+    // Завантажує щоденний прогрес для даного користувача за сьогодні
+    private fun loadDailyProgress(userId: Int) {
+        viewModelScope.launch {
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.time
+
+            // Спостерігаємо за даними з бази даних за сьогодні
+            dailyProgressDao.getDailyProgressFlow(userId, today)
+                .collectLatest { progress ->
+                    _dailyProgress.value = progress
                 }
         }
     }
 
-    private fun resetAllProgress() {
-        // Очищаємо всі змінні стану до значень за замовчуванням у ViewModel
-        _currentWeight.value = "0"
-        _weightTarget.value = "0"
-        _currentDistance.value = "0"
-        _distanceTarget.value = "5"
-        _waterProgress.value = "0"
-        _waterTarget.value = "2"
-        _caloriesTarget.value = "2000"
-        _currentWaterProgress.value = "0"
-        _waterAmount.value = "0"
-        _currentCaloriesProgress.value = "0"
-        selectedFoods = emptyList()
-    }
-
-    private fun loadProgressForUser(userId: Int) {
-        viewModelScope.launch {
+    // Завантажує цілі користувача (можливо, з останнього запису або з окремого місця)
+    // Для простоти поки що візьмемо з DailyProgress, якщо є
+    private fun loadUserTargets(userId: Int) {
+         viewModelScope.launch {
             val today = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }.time
+             val dailyProgress = dailyProgressDao.getDailyProgress(userId, today) // Викликаємо suspend версію
 
-            val dailyProgress = dailyProgressDao.getDailyProgress(userId, today)
-            
-            if (dailyProgress != null) {
-                // Якщо є дані за сьогодні, завантажуємо їх
-                _currentWeight.value = dailyProgress.weightProgress.toString()
-                _weightTarget.value = dailyProgress.weightTarget.toString()
-                _currentDistance.value = dailyProgress.distanceProgress.toString()
-                _distanceTarget.value = dailyProgress.distanceTarget.toString()
-                _waterProgress.value = dailyProgress.waterProgress.toString()
-                _waterTarget.value = dailyProgress.waterTarget.toString()
-                _caloriesTarget.value = dailyProgress.caloriesTarget.toString()
-                // Завантажуємо збережені калорії та воду
-                _currentCaloriesProgress.value = dailyProgress.caloriesProgress.toString()
-                _currentWaterProgress.value = dailyProgress.waterProgress.toString()
-                _waterAmount.value = dailyProgress.waterProgress.toString()
-                // Очищаємо список їжі при завантаженні даних за день
-                selectedFoods = emptyList()
-            } else {
-                // Якщо даних за сьогодні немає, встановлюємо значення за замовчуванням у ViewModel
-                _currentWeight.value = "0"
-                _weightTarget.value = "0"
-                _currentDistance.value = "0"
-                _distanceTarget.value = "5"
-                _waterProgress.value = "0"
-                _waterTarget.value = "2"
-                _caloriesTarget.value = "2000"
-                _currentCaloriesProgress.value = "0"
-                _currentWaterProgress.value = "0"
-                _waterAmount.value = "0"
-                selectedFoods = emptyList() // Скидаємо список їжі, якщо немає даних за сьогодні
-            }
-        }
-    }
-
-    private fun loadCurrentWaterProgress() {
-        viewModelScope.launch {
-            val today = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.time
-
-            currentUser?.id?.let { userId ->
-                val dailyProgress = dailyProgressDao.getDailyProgress(userId, today)
-                _currentWaterProgress.value = dailyProgress?.waterProgress?.toString() ?: "0"
-                _waterAmount.value = dailyProgress?.waterProgress?.toString() ?: "0"
-            }
+             dailyProgress?.let {
+                 _weightTarget.value = it.weightTarget.toString()
+                 _distanceTarget.value = it.distanceTarget.toString()
+                 _waterTarget.value = it.waterTarget.toString()
+                 _caloriesTarget.value = it.caloriesTarget.toString()
+             } // Якщо запису за сьогодні немає, цілі залишаються дефолтними у ViewModel state
         }
     }
 
     // Зберігає поточний прогрес та цілі користувача в базу даних
-    private fun saveDailyProgressForCurrentUser() {
+    // Тепер цей метод оновлює існуючий або створює новий запис
+    private suspend fun saveDailyProgress() {
         currentUser?.id?.let { userId ->
-            viewModelScope.launch {
-                val today = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.time
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.time
 
-                val dailyProgress = dailyProgressDao.getDailyProgress(userId, today)
+            val existingProgress = dailyProgressDao.getDailyProgress(userId, today)
 
-                if (dailyProgress != null) {
-                    // Оновлюємо існуючий запис
-                    val updatedProgress = dailyProgress.copy(
-                        distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
-                        distanceProgress = _currentDistance.value.toIntOrNull() ?: 0,
-                        waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
-                        waterProgress = _waterProgress.value.toIntOrNull() ?: 0,
-                        weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
-                        weightProgress = _currentWeight.value.toIntOrNull() ?: 0,
-                        caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0,
-                        caloriesProgress = getTotalCalories()
-                    )
-                    dailyProgressDao.updateDailyProgress(updatedProgress)
-                } else {
-                    // Створюємо новий запис
-                    val newProgress = DailyProgress(
-                        date = today,
-                        waterProgress = _waterProgress.value.toIntOrNull() ?: 0,
-                        userId = userId,
-                        waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
-                        distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
-                        distanceProgress = _currentDistance.value.toIntOrNull() ?: 0,
-                        weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
-                        weightProgress = _currentWeight.value.toIntOrNull() ?: 0,
-                        caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0,
-                        caloriesProgress = getTotalCalories()
-                    )
-                    dailyProgressDao.insertDailyProgress(newProgress)
-                }
+            val progressToSave = existingProgress?.copy(
+                distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                distanceProgress = _dailyProgress.value?.distanceProgress ?: 0, // Беремо з StateFlow, null-safe
+                waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                waterProgress = _dailyProgress.value?.waterProgress ?: 0, // Беремо з StateFlow, null-safe
+                weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                weightProgress = _dailyProgress.value?.weightProgress ?: 0, // Беремо з StateFlow, null-safe
+                caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0,
+                caloriesProgress = _dailyProgress.value?.caloriesProgress ?: 0 // Беремо з StateFlow, null-safe
+            ) ?: DailyProgress(
+                date = today,
+                waterProgress = _dailyProgress.value?.waterProgress ?: 0, // Беремо з StateFlow, null-safe
+                userId = userId,
+                waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                distanceProgress = _dailyProgress.value?.distanceProgress ?: 0, // Беремо з StateFlow, null-safe
+                weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                weightProgress = _dailyProgress.value?.weightProgress ?: 0, // Беремо з StateFlow, null-safe
+                caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0,
+                caloriesProgress = _dailyProgress.value?.caloriesProgress ?: 0 // Беремо з StateFlow, null-safe
+            )
+
+            if (existingProgress == null) {
+                 dailyProgressDao.insertDailyProgress(progressToSave)
+            } else {
+                 dailyProgressDao.updateDailyProgress(progressToSave)
             }
         }
     }
 
+    // Методи оновлення прогресу та цілей тепер оновлюють базу даних
+
+    fun setWeightProgress(weight: String) {
+        viewModelScope.launch {
+             val currentProgress = _dailyProgress.value
+             if(currentProgress != null) {
+                 val updated = currentProgress.copy(weightProgress = weight.toIntOrNull() ?: 0)
+                 dailyProgressDao.updateDailyProgress(updated)
+             } else {
+                 // Якщо запису за сьогодні немає, створюємо новий з цим значенням та дефолтними іншими
+                  currentUser?.id?.let { userId ->
+                      val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.time
+                      val newProgress = DailyProgress(
+                           userId = userId,
+                           date = today,
+                           weightProgress = weight.toIntOrNull() ?: 0,
+                           weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                           distanceProgress = _dailyProgress.value?.distanceProgress ?: 0, // null-safe
+                           distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                           waterProgress = _dailyProgress.value?.waterProgress ?: 0, // null-safe
+                           waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                           caloriesProgress = _dailyProgress.value?.caloriesProgress ?: 0, // null-safe
+                           caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0
+                      )
+                      dailyProgressDao.insertDailyProgress(newProgress)
+                  }
+             }
+        }
+    }
+
+    fun setWeightTarget(target: String) {
+         _weightTarget.value = target // Оновлюємо ViewModel state
+         viewModelScope.launch { saveDailyProgress() } // Зберігаємо в базу
+    }
+
+    fun setDistanceProgress(distance: String) {
+         viewModelScope.launch {
+             val currentProgress = _dailyProgress.value
+             if(currentProgress != null) {
+                 val updated = currentProgress.copy(distanceProgress = distance.toIntOrNull() ?: 0)
+                 dailyProgressDao.updateDailyProgress(updated)
+             } else {
+                 // Якщо запису за сьогодні немає, створюємо новий з цим значенням та дефолтними іншими
+                  currentUser?.id?.let { userId ->
+                       val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.time
+                       val newProgress = DailyProgress(
+                           userId = userId,
+                           date = today,
+                           distanceProgress = distance.toIntOrNull() ?: 0,
+                           distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                           weightProgress = _dailyProgress.value?.weightProgress ?: 0, // null-safe
+                           weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                           waterProgress = _dailyProgress.value?.waterProgress ?: 0, // null-safe
+                           waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                           caloriesProgress = _dailyProgress.value?.caloriesProgress ?: 0, // null-safe
+                           caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0
+                       )
+                       dailyProgressDao.insertDailyProgress(newProgress)
+                  }
+             }
+        }
+    }
+
+    fun setDistanceTarget(target: String) {
+        _distanceTarget.value = target // Оновлюємо ViewModel state
+        viewModelScope.launch { saveDailyProgress() } // Зберігаємо в базу
+    }
+
+    fun setWaterProgress(water: String) {
+         viewModelScope.launch {
+              val currentProgress = _dailyProgress.value
+              if(currentProgress != null) {
+                  val updated = currentProgress.copy(waterProgress = water.toIntOrNull() ?: 0)
+                  dailyProgressDao.updateDailyProgress(updated)
+              } else {
+                  // Якщо запису за сьогодні немає, створюємо новий з цим значенням та дефолтними іншими
+                   currentUser?.id?.let { userId ->
+                       val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.time
+                       val newProgress = DailyProgress(
+                            userId = userId,
+                            date = today,
+                            waterProgress = water.toIntOrNull() ?: 0,
+                            waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                            distanceProgress = _dailyProgress.value?.distanceProgress ?: 0, // null-safe
+                            distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                            weightProgress = _dailyProgress.value?.weightProgress ?: 0, // null-safe
+                            weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                            caloriesProgress = _dailyProgress.value?.caloriesProgress ?: 0, // null-safe
+                            caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0
+                       )
+                       dailyProgressDao.insertDailyProgress(newProgress)
+                   }
+              }
+         }
+    }
+
+    fun setWaterTarget(target: String) {
+        _waterTarget.value = target // Оновлюємо ViewModel state
+        viewModelScope.launch { saveDailyProgress() } // Зберігаємо в базу
+    }
+
+    fun setCaloriesTarget(target: String) {
+        _caloriesTarget.value = target // Оновлюємо ViewModel state
+        viewModelScope.launch { saveDailyProgress() } // Зберігаємо в базу
+    }
+
+    fun setWaterAmount(amount: String) {
+        // Це значення для UI вводу, оновлюємо прогрес води
+        setWaterProgress(amount)
+    }
+
+    // Оновлюємо калорії при додаванні/видаленні їжі
     fun addFood(food: Food, grams: Int) {
-        val calories = (food.calories * grams) / 100 // Розраховую калорійність для порції
+        val calories = (food.calories * grams) / 100
         val consumedFood = ConsumedFood(food, grams, calories)
         selectedFoods = selectedFoods + consumedFood
-        // Оновлюємо змінну стану калорій та зберігаємо в базу даних
-        _currentCaloriesProgress.value = getTotalCalories().toString()
-        saveDailyProgressForCurrentUser()
+        // Оновлюємо калорії в базі даних
+        viewModelScope.launch {
+             val currentProgress = _dailyProgress.value
+              if(currentProgress != null) {
+                 val updated = currentProgress.copy(caloriesProgress = getTotalCalories())
+                 dailyProgressDao.updateDailyProgress(updated)
+             } else {
+                 // Якщо запису за сьогодні немає, створюємо новий з цим значенням та дефолтними іншими
+                   currentUser?.id?.let { userId ->
+                       val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.time
+                       val newProgress = DailyProgress(
+                            userId = userId,
+                            date = today,
+                            caloriesProgress = getTotalCalories(),
+                            weightProgress = _dailyProgress.value?.weightProgress ?: 0, // null-safe
+                           weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                           distanceProgress = _dailyProgress.value?.distanceProgress ?: 0, // null-safe
+                           distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                           waterProgress = _dailyProgress.value?.waterProgress ?: 0, // null-safe
+                           waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                            caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0
+                       )
+                       dailyProgressDao.insertDailyProgress(newProgress)
+                   }
+              }
+        }
     }
 
     fun removeFood(consumedFood: ConsumedFood) {
         selectedFoods = selectedFoods - consumedFood
-        // Оновлюємо змінну стану калорій та зберігаємо в базу даних
-        _currentCaloriesProgress.value = getTotalCalories().toString()
-        saveDailyProgressForCurrentUser()
-    }
-
-    fun setWeightProgress(weight: String) {
-        _currentWeight.value = weight
-        // Зберігаємо оновлений прогрес ваги в базу даних
-        saveDailyProgressForCurrentUser()
-    }
-
-    fun setWeightTarget(target: String) {
-        _weightTarget.value = target
-        // Зберігаємо оновлену ціль ваги в базу даних
-        saveDailyProgressForCurrentUser()
-    }
-
-    fun setDistanceProgress(distance: String) {
-        _currentDistance.value = distance
-        // Зберігаємо оновлений прогрес відстані в базу даних
-        saveDailyProgressForCurrentUser()
-    }
-
-    fun setDistanceTarget(target: String) {
-        _distanceTarget.value = target
-        // Зберігаємо оновлену ціль відстані в базу даних
-        saveDailyProgressForCurrentUser()
-    }
-
-    fun setWaterProgress(water: String) {
-        _waterProgress.value = water
-        // Зберігаємо оновлений прогрес води в базу даних
-        saveDailyProgressForCurrentUser()
-    }
-
-    fun setWaterTarget(target: String) {
-        _waterTarget.value = target
-        // Зберігаємо оновлену ціль води в базу даних
-        saveDailyProgressForCurrentUser()
-    }
-
-    fun setCaloriesTarget(target: String) {
-        _caloriesTarget.value = target
-        // Зберігаємо оновлену ціль калорій в базу даних
-        saveDailyProgressForCurrentUser()
-    }
-
-    fun setWaterAmount(amount: String) {
-        _waterAmount.value = amount
-        _currentWaterProgress.value = amount
-        // Зберігаємо оновлений прогрес води в базу даних
-        saveDailyProgressForCurrentUser()
+        // Оновлюємо калорії в базі даних
+         viewModelScope.launch {
+              val currentProgress = _dailyProgress.value
+              if(currentProgress != null) {
+                 val updated = currentProgress.copy(caloriesProgress = getTotalCalories())
+                 dailyProgressDao.updateDailyProgress(updated)
+              } else {
+                  // Якщо запису за сьогодні немає, створюємо новий з цим значенням та дефолтними іншими
+                    currentUser?.id?.let { userId ->
+                       val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.time
+                       val newProgress = DailyProgress(
+                            userId = userId,
+                            date = today,
+                            caloriesProgress = getTotalCalories(),
+                            weightProgress = _dailyProgress.value?.weightProgress ?: 0, // null-safe
+                           weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                           distanceProgress = _dailyProgress.value?.distanceProgress ?: 0, // null-safe
+                           distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                           waterProgress = _dailyProgress.value?.waterProgress ?: 0, // null-safe
+                           waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                            caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0
+                       )
+                       dailyProgressDao.insertDailyProgress(newProgress)
+                   }
+              }
+         }
     }
 
     fun getTotalCalories(): Int {
         return selectedFoods.sumOf { it.calories }
     }
 
-    // Збереження щоденного прогресу в базу даних
-    // Викликається автоматично о 23:59 через WorkManager
-    fun saveDailyProgress() {
-        viewModelScope.launch {
-            currentUser?.id?.let { userId ->
-                val today = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.time
-
-                // Створюємо запис про прогрес за день
-                val dailyProgress = DailyProgress(
-                    userId = userId,
-                    date = today,
-                    distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
-                    distanceProgress = _currentDistance.value.toIntOrNull() ?: 0,
-                    waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
-                    waterProgress = _waterProgress.value.toIntOrNull() ?: 0,
-                    weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
-                    weightProgress = _currentWeight.value.toIntOrNull() ?: 0,
-                    caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0,
-                    caloriesProgress = getTotalCalories()
-                )
-                dailyProgressDao.insertDailyProgress(dailyProgress)
-
-                // Не скидаємо прогрес повністю, щоб дані зберігались
-                // Скидання ViewModel відбувається при виході з акаунту
-            }
-        }
+    // Збереження щоденного прогресу в базу даних (викликається воркером)
+    // Цей метод тепер просто викликає saveDailyProgress(), який оновлює/створює запис за сьогодні
+    // Назва методу saveDailyProgress() більш відповідає його поточній ролі
+    fun saveDailyProgressViaWorker() { // Перейменовуємо для уникнення плутанини
+         viewModelScope.launch { saveDailyProgress() }
     }
 
     // Отримання прогресу за конкретну дату
@@ -337,12 +420,13 @@ class SharedViewModel(
 
     fun updateCurrentUser(username: String, email: String, dateOfBirth: Date?, gender: String?) {
         viewModelScope.launch {
-            currentUser?.let { user ->
-                val updatedUser = user.copy(username = username, email = email, dateOfBirth = dateOfBirth, gender = gender)
-                database.userDao().updateUser(updatedUser)
-                currentUser = updatedUser
+        currentUser?.let { user ->
+            val updatedUser = user.copy(username = username, email = email, dateOfBirth = dateOfBirth, gender = gender)
+            database.userDao().updateUser(updatedUser)
+            currentUser = updatedUser
                 // Перезавантажуємо дані користувача після оновлення
-                loadProgressForUser(updatedUser.id)
+                loadDailyProgress(updatedUser.id) // Оновлюємо завантаження
+                loadUserTargets(updatedUser.id) // Оновлюємо цілі
             }
         }
     }
@@ -356,10 +440,45 @@ class SharedViewModel(
     }
 
     fun resetWaterProgress() {
-        // Скидаємо тільки значення у ViewModel, збереження в базу відбувається в saveDailyProgressForCurrentUser()
-        _waterProgress.value = "0"
-        _currentWaterProgress.value = "0"
-        _waterAmount.value = "0"
-        saveDailyProgressForCurrentUser()
+        // Скидаємо воду, оновлюючи базу даних
+        viewModelScope.launch {
+             val currentProgress = _dailyProgress.value
+              if(currentProgress != null) {
+                 val updated = currentProgress.copy(waterProgress = 0)
+                 dailyProgressDao.updateDailyProgress(updated)
+              } else {
+        currentUser?.id?.let { userId ->
+                       val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.time
+                       val newProgress = DailyProgress(
+                            userId = userId,
+                            date = today,
+                            waterProgress = 0,
+                             weightProgress = _dailyProgress.value?.weightProgress ?: 0, // null-safe
+                           weightTarget = _weightTarget.value.toIntOrNull() ?: 0,
+                           distanceProgress = _dailyProgress.value?.distanceProgress ?: 0, // null-safe
+                           distanceTarget = _distanceTarget.value.toIntOrNull() ?: 0,
+                            waterTarget = _waterTarget.value.toIntOrNull() ?: 0,
+                           caloriesProgress = _dailyProgress.value?.caloriesProgress ?: 0, // null-safe
+                           caloriesTarget = _caloriesTarget.value.toIntOrNull() ?: 0
+                       )
+                       dailyProgressDao.insertDailyProgress(newProgress)
+                   }
+              }
+        }
+    }
+
+     fun loginUser(user: User, context: Context) {
+         currentUser = user
+         // Зберігаємо ID користувача в Shared Preferences для автоматичного входу
+         val userPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+         userPrefs.edit().putInt("current_user_id", user.id).apply()
+     }
+
+     fun logoutUser(context: Context) {
+         currentUser = null
+         // Очищаємо ID користувача з Shared Preferences
+         val userPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+         userPrefs.edit().remove("current_user_id").apply()
+         // ViewModel state скидається через спостереження за currentUser в init
     }
 } 

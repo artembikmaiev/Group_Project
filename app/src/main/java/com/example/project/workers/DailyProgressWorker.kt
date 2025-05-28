@@ -36,51 +36,41 @@ class DailyProgressWorker(
                 return Result.failure()
             }
 
-            // Отримуємо всі показники з індивідуальних SharedPreferences користувача
-            val userProgressPrefs = context.getSharedPreferences("user_progress_$userId", Context.MODE_PRIVATE)
-            val weightProgress = userProgressPrefs.getString("weight_progress", "70")?.toIntOrNull() ?: 70
-            val weightTarget = userProgressPrefs.getString("weight_target", "68")?.toIntOrNull() ?: 68
-            val distanceProgress = userProgressPrefs.getString("distance_progress", "0")?.toIntOrNull() ?: 0
-            val distanceTarget = userProgressPrefs.getString("distance_target", "5")?.toIntOrNull() ?: 5
-            val waterProgress = userProgressPrefs.getString("water_progress", "0")?.toIntOrNull() ?: 0
-            val waterTarget = userProgressPrefs.getString("water_target", "2")?.toIntOrNull() ?: 2
-            val caloriesProgress = userProgressPrefs.getString("calories_progress", "0")?.toIntOrNull() ?: 0
-            val caloriesTarget = userProgressPrefs.getString("calories_target", "2000")?.toIntOrNull() ?: 2000
-
-            Log.d("DailyProgressWorker", """
-                Retrieved data for user $userId:
-                - Weight: $weightProgress/$weightTarget
-                - Distance: $distanceProgress/$distanceTarget
-                - Water: $waterProgress/$waterTarget
-                - Calories: $caloriesProgress/$caloriesTarget
-            """.trimIndent())
-
-            // Встановлюємо час на 23:59 поточного дня
+            // Отримуємо дані прогресу за сьогодні з бази даних
             val calendar = Calendar.getInstance()
-            calendar.set(Calendar.HOUR_OF_DAY, 23)
-            calendar.set(Calendar.MINUTE, 59)
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
             calendar.set(Calendar.SECOND, 0)
             calendar.set(Calendar.MILLISECOND, 0)
-            val date = calendar.time
+            val today = calendar.time
 
-            Log.d("DailyProgressWorker", "Creating DailyProgress for date: $date")
+            val dailyProgress = dailyProgressDao.getDailyProgress(userId, today)
 
-            val dailyProgress = DailyProgress(
-                userId = userId,
-                date = date,
-                weightProgress = weightProgress,
-                weightTarget = weightTarget,
-                distanceProgress = distanceProgress,
-                distanceTarget = distanceTarget,
-                waterProgress = waterProgress,
-                waterTarget = waterTarget,
-                caloriesProgress = caloriesProgress,
-                caloriesTarget = caloriesTarget
-            )
-
-            // Зберігаємо дані в базу
-            dailyProgressDao.insertDailyProgress(dailyProgress)
-            Log.d("DailyProgressWorker", "Data successfully saved to database for user $userId")
+            if (dailyProgress == null) {
+                 Log.d("DailyProgressWorker", "No daily progress data found in database for user $userId on $today. Creating default entry.")
+                 // Якщо даних за сьогодні немає (наприклад, користувач нічого не вводив)
+                 // Створюємо запис за замовчуванням з поточними цілями (якщо вони збережені або дефолтні)
+                 // Нам потрібен доступ до цілей. Найпростіше взяти дефолтні або спробувати завантажити останні цілі.
+                 // Для простоти візьмемо дефолтні значення для нового запису
+                 val defaultDailyProgress = DailyProgress(
+                    userId = userId,
+                    date = today,
+                    weightProgress = 0, // Дефолтні
+                    weightTarget = 68, // Дефолтні
+                    distanceProgress = 0, // Дефолтні
+                    distanceTarget = 5, // Дефолтні
+                    waterProgress = 0, // Дефолтні
+                    waterTarget = 2, // Дефолтні
+                    caloriesProgress = 0, // Дефолтні
+                    caloriesTarget = 2000 // Дефолтні
+                 )
+                 dailyProgressDao.insertDailyProgress(defaultDailyProgress)
+                 Log.d("DailyProgressWorker", "Default daily progress entry created for user $userId on $today.")
+            } else {
+                // Якщо дані за сьогодні є, воркер вже нічого не робить
+                // ViewModel зберігає дані в базу в реальному часі
+                Log.d("DailyProgressWorker", "Daily progress data already exists in database for user $userId on $today. Worker is done.")
+            }
 
             Result.success()
         } catch (e: Exception) {

@@ -35,7 +35,7 @@ fun HomeScreen(
     val currentDistance = sharedViewModel.currentDistance
     val distanceTarget = sharedViewModel.distanceTarget
     val totalCalories = sharedViewModel.getTotalCalories() // Загальні спожиті калорії
-    val waterProgress = sharedViewModel.currentWaterProgress
+    val waterProgress = sharedViewModel.waterProgress
     val waterTarget = sharedViewModel.waterTarget
 
     Scaffold(
@@ -109,7 +109,7 @@ fun HomeScreen(
                                 Text("Норма калорій:", fontSize = 12.sp)
                                 Text("2000 ккал", color = Color.Gray, fontSize = 12.sp)
                                 Text("Спожито калорій:", fontSize = 12.sp)
-                                Text("${totalCalories} ккал", color = Color.Gray, fontSize = 12.sp)
+                                Text("${sharedViewModel.currentCaloriesProgress} ккал", color = Color.Gray, fontSize = 12.sp)
                             }
                         }
                     }

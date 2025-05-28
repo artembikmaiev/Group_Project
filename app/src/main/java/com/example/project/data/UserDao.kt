@@ -49,4 +49,12 @@ interface UserDao {
      */
     @Update
     suspend fun updateUser(user: User)
+
+    /**
+     * Отримання користувача за ID
+     * @param userId ID користувача
+     * @return Дані користувача або null, якщо користувач не знайдений
+     */
+    @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
+    suspend fun getUserById(userId: Int): User?
 } 
