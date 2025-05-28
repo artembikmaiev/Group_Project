@@ -47,21 +47,26 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import com.example.project.ui.components.AppHeader
 
+/**
+ * Екран профілю користувача.
+ * Дозволяє переглядати та редагувати особисті дані (ім'я, пошта, дата народження, стать).
+ */
 @Composable
 fun ProfileScreen(
     navController: NavController,
     sharedViewModel: SharedViewModel
 ) {
+    // Змінні стану для редагування даних користувача
     var editedUsername by remember { mutableStateOf(sharedViewModel.currentUser?.username ?: "") }
     var editedEmail by remember { mutableStateOf(sharedViewModel.currentUser?.email ?: "") }
     var editedDateOfBirth by remember { mutableStateOf<Date?>(sharedViewModel.currentUser?.dateOfBirth) }
     var isMale by remember { mutableStateOf(sharedViewModel.currentUser?.gender == "Чоловіча") }
     var isFemale by remember { mutableStateOf(sharedViewModel.currentUser?.gender == "Жіноча") }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current // Get current context for DatePickerDialog
+    val context = LocalContext.current
     
+    // Налаштування DatePickerDialog для вибору дати народження
     val calendar = Calendar.getInstance()
-    // Set calendar to current date or user's birth date if available
     editedDateOfBirth?.let { calendar.time = it }
     
     val year = calendar.get(Calendar.YEAR)
@@ -111,7 +116,7 @@ fun ProfileScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
             
-            // Editable username field
+            // Поля для введення та редагування даних користувача
             OutlinedTextField(
                 value = editedUsername,
                 onValueChange = { editedUsername = it },
@@ -132,21 +137,20 @@ fun ProfileScreen(
                     Text("Дані користувача", fontSize = 16.sp, color = Color(0xFF4CAF50))
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    // Editable email field
                     OutlinedTextField(
                         value = editedEmail,
                         onValueChange = { editedEmail = it },
                         label = { Text("Електронна адреса") },
                         modifier = Modifier.fillMaxWidth()
-                            .padding(top = 8.dp) // Add padding above email field
+                            .padding(top = 8.dp)
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Editable Date of Birth field with DatePickerDialog
+                    // Поле для вибору дати народження з DatePickerDialog
                     OutlinedTextField(
                         value = editedDateOfBirth?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it) } ?: "",
-                        onValueChange = { /* ReadOnly, do nothing */ },
+                        onValueChange = { /* Тільки для читання */ },
                         label = { Text("Дата народження") },
                         readOnly = true,
                         modifier = Modifier.fillMaxWidth()
@@ -155,7 +159,7 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Gender selection with checkboxes
+                    // Вибір статі за допомогою чекбоксів
                     Text("Стать", fontSize = 16.sp, color = Color.Black)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
@@ -177,12 +181,13 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Activity level based on distance
+                    // Відображення рівня активності на основі пройденої дистанції
                     Text("Рівень активності: ${sharedViewModel.calculateActivityLevel(sharedViewModel.currentDistance.toIntOrNull() ?: 0)}", fontSize = 16.sp, color = Color.Black)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Кнопка для збереження змін даних користувача
             Button(
                 onClick = {
                     scope.launch {
@@ -200,11 +205,12 @@ fun ProfileScreen(
                 Text("Зберегти зміни", color = Color.White)
             }
 
-            Spacer(modifier = Modifier.height(8.dp)) // Add some space before logout button
+            // Кнопка для виходу з акаунту
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = {
-                    sharedViewModel.currentUser = null
+                    sharedViewModel.logoutUser(context)
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                         launchSingleTop = true
